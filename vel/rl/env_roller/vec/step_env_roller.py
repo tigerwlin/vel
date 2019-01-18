@@ -19,7 +19,7 @@ class StepEnvRoller(EnvRollerBase):
         self.gae_lambda = gae_lambda
 
         # Initial observation
-        self.last_observation = self._to_tensor(self.environment.reset())
+        self.last_observation = self._dict_to_tensor(self.environment.reset())
 
         # Relevant for RNN policies
         self.hidden_state = None
@@ -29,6 +29,13 @@ class StepEnvRoller(EnvRollerBase):
         """ Return environment of this env roller """
         return self._environment
 
+    def _dict_to_tensor(self, numpy_array_dict):
+        """ Convert numpy array to a tensor """
+        torch_dict = {}
+        for k, v in numpy_array_dict.items():
+            torch_dict[k] = torch.from_numpy(numpy_array_dict[k]).to(self.device)
+        return torch_dict
+
     def _to_tensor(self, numpy_array):
         """ Convert numpy array to a tensor """
         return torch.from_numpy(numpy_array).to(self.device)
@@ -36,7 +43,9 @@ class StepEnvRoller(EnvRollerBase):
     @torch.no_grad()
     def rollout(self, batch_info, model):
         """ Calculate env rollout """
-        observation_accumulator = []  # Device tensors
+        observation_accumulator = {}  # Device tensors
+        observation_accumulator['environment'] = []
+        observation_accumulator['goal'] = []
         action_accumulator = []  # Device tensors
         value_accumulator = []  # Device tensors
         dones_accumulator = []  # Device tensors
@@ -63,12 +72,14 @@ class StepEnvRoller(EnvRollerBase):
 
             actions, values, logprobs = step['actions'], step['values'], step['logprobs']
 
-            observation_accumulator.append(self.last_observation)
+            observation_accumulator['environment'].append(self.last_observation['environment'])
+            observation_accumulator['goal'].append(self.last_observation['goal'])
+
             action_accumulator.append(actions)
             value_accumulator.append(values)
             logprobs_accumulator.append(logprobs)
 
-            actions_numpy = actions.detach().cpu().numpy()
+            actions_numpy = actions.detach().cpu().numpy()[0]
             new_obs, new_rewards, new_dones, new_infos = self.environment.step(actions_numpy)
 
             # Done is flagged true when the episode has ended AND the frame we see is already a first frame from the
@@ -77,7 +88,7 @@ class StepEnvRoller(EnvRollerBase):
             dones_tensor = self._to_tensor(new_dones.astype(np.float32))
             dones_accumulator.append(dones_tensor)
 
-            self.last_observation = self._to_tensor(new_obs[:])
+            self.last_observation = self._dict_to_tensor(new_obs)
 
             if model.is_recurrent:
                 # Zero out state in environments that have finished
@@ -92,7 +103,10 @@ class StepEnvRoller(EnvRollerBase):
         else:
             final_values = model.value(self.last_observation)
 
-        observations_buffer = torch.stack(observation_accumulator)
+        observations_buffer = {}
+        observations_buffer['environment'] = torch.stack(observation_accumulator['environment'])
+        observations_buffer['goal'] = torch.stack(observation_accumulator['goal'])
+
         rewards_buffer = torch.stack(rewards_accumulator)
         actions_buffer = torch.stack(action_accumulator)  # Actions may have various different dtypes
         values_buffer = torch.stack(value_accumulator)

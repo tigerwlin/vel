@@ -90,12 +90,19 @@ class Trajectories(Rollout):
     def to_transitions(self) -> 'Transitions':
         """ Convert given rollout to Transitions """
         # No need to propagate 'rollout_tensors' as they won't mean anything
+        transition_tensor = {}
+        for name, t in self.transition_tensors.items():
+            if isinstance(t, dict):
+                transition_tensor[name] = {k: tensor_util.merge_first_two_dims(v) for k, v in t.items()}
+            else:
+                transition_tensor[name] = tensor_util.merge_first_two_dims(t)
         return Transitions(
             size=self.num_steps * self.num_envs,
             environment_information=[ei for l in self.environment_information for ei in l],
-            transition_tensors={
-                name: tensor_util.merge_first_two_dims(t) for name, t in self.transition_tensors.items()
-            },
+            transition_tensors=transition_tensor,
+            # {
+            #     name: tensor_util.merge_first_two_dims(t) for name, t in self.transition_tensors.items()
+            # },
             extra_data=self.extra_data
         )
 

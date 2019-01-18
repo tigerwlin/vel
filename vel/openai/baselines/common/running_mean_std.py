@@ -9,6 +9,8 @@ class RunningMeanStd(object):
         self.count = epsilon
 
     def update(self, x):
+        if isinstance(x, dict):
+            x = x['environment']
         batch_mean = np.mean(x, axis=0)
         batch_var = np.var(x, axis=0)
         batch_count = x.shape[0]
