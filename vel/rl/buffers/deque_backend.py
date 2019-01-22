@@ -18,10 +18,11 @@ class DequeBufferBackend:
         self.current_idx = -1
 
         # Data buffers
-        self.state_buffer = np.zeros(
-            [self.buffer_capacity] + list(observation_space.shape),
-            dtype=observation_space.dtype
-        )
+        # self.state_buffer = np.zeros(
+        #     [self.buffer_capacity] + list(observation_space.shape),
+        #     dtype=observation_space.dtype
+        # )
+        self.state_buffer = [[] for x in range(self.buffer_capacity)]
 
         self.action_buffer = np.zeros([self.buffer_capacity] + list(action_space.shape), dtype=action_space.dtype)
         self.reward_buffer = np.zeros([self.buffer_capacity], dtype=np.float32)
@@ -75,7 +76,8 @@ class DequeBufferBackend:
                 accumulator.append(self.state_buffer[idx])
 
         # We're pushing the elements in reverse order
-        return np.concatenate(accumulator[::-1], axis=-1)
+        # return np.concatenate(accumulator[::-1], axis=-1)
+        return accumulator[::-1]
 
     def get_transition(self, frame_idx, history_length=1):
         """ Single transition with given index """
@@ -110,7 +112,9 @@ class DequeBufferBackend:
             next_frame = self.state_buffer[next_idx]
         else:
             next_idx = (frame_idx + 1) % self.buffer_capacity
-            next_frame = np.zeros_like(self.state_buffer[next_idx])
+            # next_frame = np.zeros_like(self.state_buffer[next_idx])
+            next_frame = {'environment': np.zeros_like(self.state_buffer[next_idx]['environment']), 'goal': np.zeros_like(self.state_buffer[next_idx]['goal'])}
+
 
         if history_length > 1:
             future_frame = np.concatenate([
@@ -123,19 +127,31 @@ class DequeBufferBackend:
 
     def get_batch(self, indexes, history_length=1):
         """ Return batch with given indexes """
-        frame_batch_shape = (
-                [indexes.shape[0]]
-                + list(self.state_buffer.shape[1:-1])
-                + [self.state_buffer.shape[-1] * history_length]
-        )
+        # frame_batch_shape = (
+        #         [indexes.shape[0]]
+        #         + list(self.state_buffer.shape[1:-1])
+        #         + [self.state_buffer.shape[-1] * history_length]
+        # )
 
-        past_frame_buffer = np.zeros(frame_batch_shape, dtype=self.state_buffer.dtype)
-        future_frame_buffer = np.zeros(frame_batch_shape, dtype=self.state_buffer.dtype)
+        # past_frame_buffer = np.zeros(frame_batch_shape, dtype=self.state_buffer.dtype)
+        # future_frame_buffer = np.zeros(frame_batch_shape, dtype=self.state_buffer.dtype)
+        # past_frame_buffer = [[] for x in range(indexes.shape[0])]
+        # future_frame_buffer = [[] for x in range(indexes.shape[0])]
+        # for buffer_idx, frame_idx in enumerate(indexes):
+        #     past_frame_buffer[buffer_idx], future_frame_buffer[buffer_idx] = self.get_frame_with_future(
+        #         frame_idx, history_length
+        #     )
 
+        past_frame_buffer = {'environment': [], 'goal': []}
+        future_frame_buffer = {'environment': [], 'goal': []}
         for buffer_idx, frame_idx in enumerate(indexes):
-            past_frame_buffer[buffer_idx], future_frame_buffer[buffer_idx] = self.get_frame_with_future(
+            past_frame, future_frame = self.get_frame_with_future(
                 frame_idx, history_length
             )
+            past_frame_buffer['environment'].append(past_frame[0]['environment'])
+            past_frame_buffer['goal'].append(past_frame[0]['goal'])
+            future_frame_buffer['environment'].append(future_frame['environment'])
+            future_frame_buffer['goal'].append(future_frame['goal'])
 
         actions = self.action_buffer[indexes]
         rewards = self.reward_buffer[indexes]
