@@ -57,12 +57,26 @@ class DequeReplayRollerOuNoise(ReplayEnvRollerBase):
 
     def _observation_to_tensor(self, observation_array):
         """ Convert observation numpy array to a tensor """
-        return torch.from_numpy(self._filter_observation(observation_array)).to(self.device)
+        torch_dict = {}
+        for k, v in observation_array.items():
+            torch_dict[k] = torch.from_numpy(observation_array[k]).to(self.device)
+        return torch_dict
+        # return torch.from_numpy(self._filter_observation(observation_array)).to(self.device)
+
+    def _observation_list_to_tensor(self, observation_array):
+        """ Convert observation numpy array to a tensor """
+        torch_dict = {}
+        for k, v in observation_array.items():
+            for i in range(len(v)):
+                v[i] = torch.from_numpy(v[i])
+            torch_dict[k] = torch.cat(v).to(self.device)
+        return torch_dict
 
     @torch.no_grad()
     def rollout(self, batch_info, model) -> Rollout:
         """ Roll-out the environment and return it """
-        observation_tensor = self._observation_to_tensor(self.last_observation[None])
+        # observation_tensor = self._observation_to_tensor(self.last_observation[None])
+        observation_tensor = self._observation_to_tensor(self.last_observation)
 
         step = model.step(observation_tensor)
         action = step['actions'].detach().cpu().numpy()[0]
@@ -75,7 +89,7 @@ class DequeReplayRollerOuNoise(ReplayEnvRollerBase):
         observation, reward, done, info = self.environment.step(action_perturbed)
 
         if self.ob_rms is not None:
-            self.ob_rms.update(observation[None])
+            self.ob_rms.update(observation)
 
         if self.ret_rms is not None:
             self.accumulated_return = reward + self.discount_factor * self.accumulated_return
@@ -115,8 +129,8 @@ class DequeReplayRollerOuNoise(ReplayEnvRollerBase):
         indexes = self.backend.sample_batch_uniform(self.batch_size, history_length=1)
         batch = self.backend.get_batch(indexes, history_length=1)
 
-        observations = self._observation_to_tensor(batch['states'])
-        observations_plus1 = self._observation_to_tensor(batch['states+1'])
+        observations = self._observation_list_to_tensor(batch['states'])
+        observations_plus1 = self._observation_list_to_tensor(batch['states+1'])
 
         rewards = batch['rewards'].astype(np.float32)
 

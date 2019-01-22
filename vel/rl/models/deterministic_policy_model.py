@@ -65,12 +65,13 @@ class DeterministicPolicyModel(Model):
 
     def forward(self, observations, input_actions=None):
         """ Calculate model outputs """
-        observations = observations.float()
+        # observations = observations.float()
 
         if input_actions is not None:
             actions = input_actions
 
-            value_input = torch.cat([observations, actions], dim=1)
+            # value_input = torch.cat([observations, actions], dim=1)
+            value_input = {'obs': observations, 'action': actions}
             value_hidden = self.value_backbone(value_input)
 
             values = self.critic_head(value_hidden)
@@ -78,7 +79,8 @@ class DeterministicPolicyModel(Model):
             policy_hidden = self.policy_backbone(observations)
             actions = self.action_head(policy_hidden)
 
-            value_input = torch.cat([observations, actions], dim=1)
+            # value_input = torch.cat([observations, actions], dim=1)
+            value_input = {'obs': observations, 'action': actions}
             value_hidden = self.value_backbone(value_input)
 
             values = self.critic_head(value_hidden)
@@ -118,7 +120,7 @@ class DeterministicPolicyModel(Model):
 
     def action(self, observations):
         """ Calculate value for given state """
-        observations = observations.float()
+        # observations = observations.float()
         policy_hidden = self.policy_backbone(observations)
         action = self.action_head(policy_hidden)
         return action
