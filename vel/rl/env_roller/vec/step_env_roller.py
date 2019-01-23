@@ -31,10 +31,13 @@ class StepEnvRoller(EnvRollerBase):
 
     def _dict_to_tensor(self, numpy_array_dict):
         """ Convert numpy array to a tensor """
-        torch_dict = {}
-        for k, v in numpy_array_dict.items():
-            torch_dict[k] = torch.from_numpy(numpy_array_dict[k]).to(self.device)
-        return torch_dict
+        if isinstance(numpy_array_dict, dict):
+            torch_dict = {}
+            for k, v in numpy_array_dict.items():
+                torch_dict[k] = torch.from_numpy(numpy_array_dict[k]).to(self.device)
+            return torch_dict
+        else:
+            return torch.from_numpy(numpy_array_dict).to(self.device)
 
     def _to_tensor(self, numpy_array):
         """ Convert numpy array to a tensor """
@@ -72,14 +75,19 @@ class StepEnvRoller(EnvRollerBase):
 
             actions, values, logprobs = step['actions'], step['values'], step['logprobs']
 
-            observation_accumulator['environment'].append(self.last_observation['environment'])
-            observation_accumulator['goal'].append(self.last_observation['goal'])
+            if isinstance(self.last_observation, dict):
+                observation_accumulator['environment'].append(self.last_observation['environment'])
+                observation_accumulator['goal'].append(self.last_observation['goal'])
+            else:
+                observation_accumulator['environment'].append(self.last_observation)
 
             action_accumulator.append(actions)
             value_accumulator.append(values)
             logprobs_accumulator.append(logprobs)
 
-            actions_numpy = actions.detach().cpu().numpy()[0]
+            actions_numpy = actions.detach().cpu().numpy()
+            if len(actions_numpy.shape) > 1:
+                actions_numpy = actions_numpy[0]
             new_obs, new_rewards, new_dones, new_infos = self.environment.step(actions_numpy)
 
             # Done is flagged true when the episode has ended AND the frame we see is already a first frame from the
@@ -103,9 +111,12 @@ class StepEnvRoller(EnvRollerBase):
         else:
             final_values = model.value(self.last_observation)
 
-        observations_buffer = {}
-        observations_buffer['environment'] = torch.stack(observation_accumulator['environment'])
-        observations_buffer['goal'] = torch.stack(observation_accumulator['goal'])
+        if len(observation_accumulator['goal']) > 0:
+            observations_buffer = {}
+            observations_buffer['environment'] = torch.stack(observation_accumulator['environment'])
+            observations_buffer['goal'] = torch.stack(observation_accumulator['goal'])
+        else:
+            observations_buffer = torch.stack(observation_accumulator['environment'])
 
         rewards_buffer = torch.stack(rewards_accumulator)
         actions_buffer = torch.stack(action_accumulator)  # Actions may have various different dtypes
