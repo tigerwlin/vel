@@ -155,6 +155,8 @@ class ActionHead(nn.Module):
         else:
             raise NotImplementedError
 
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     def forward(self, input_data):
         return self.head(input_data)
 
@@ -162,8 +164,8 @@ class ActionHead(nn.Module):
         """ Sample from a probability space of all actions """
         action = self.head.sample(policy_params, **kwargs)
         if isinstance(self.head, DiagGaussianActionHead):
-            scale = torch.from_numpy(np.expand_dims(self.action_space.high - self.action_space.low, axis=0) / 2.0)
-            mean_action = torch.from_numpy(np.expand_dims(self.action_space.low + self.action_space.high, axis=0) / 2.0)
+            scale = torch.from_numpy(np.expand_dims(self.action_space.high - self.action_space.low, axis=0) / 2.0).to(self.device)
+            mean_action = torch.from_numpy(np.expand_dims(self.action_space.low + self.action_space.high, axis=0) / 2.0).to(self.device)
             normalized_action = action.tanh() * scale + mean_action
             return normalized_action
         else:
