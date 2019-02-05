@@ -33,7 +33,7 @@ class FPSMetric(ValueMetric):
 class EpisodeRewardMetric(BaseMetric):
     def __init__(self, name):
         super().__init__(name)
-        self.buffer = collections.deque(maxlen=100)
+        self.buffer = collections.deque(maxlen=10)
 
     def calculate(self, batch_info):
         """ Calculate value of a metric based on supplied data """

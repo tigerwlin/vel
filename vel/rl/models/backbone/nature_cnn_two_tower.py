@@ -44,8 +44,8 @@ class NatureCnnTwoTower(LinearBackboneModel):
             stride=1
         )
 
-        self.linear1 = nn.Linear(2, 512)
-        self.linear2 = nn.Linear(512, 512)
+        self.linear1 = nn.Linear(2, 1024)
+        self.linear2 = nn.Linear(1024, 512)
 
 
         self.final_width = net_util.convolutional_layer_series(input_width, [
@@ -91,14 +91,14 @@ class NatureCnnTwoTower(LinearBackboneModel):
         result1 = F.relu(self.conv3(result1))
 
         result2 = input2.view(input2.size(0), -1)
-        result2 = F.tanh(self.linear1(result2))
-        result2 = F.tanh(self.linear2(result2))
+        result2 = F.leaky_relu(self.linear1(result2))
+        result2 = F.leaky_relu(self.linear2(result2))
 
         flattened1 = result1.view(result1.size(0), -1)
         flattened2 = result2.view(result2.size(0), -1)
         flattened = flattened2  # torch.cat((flattened1, flattened2), 1)
 
-        return F.tanh(self.linear_layer(flattened))
+        return F.leaky_relu(self.linear_layer(flattened))
 
 
 def create(input_width, input_height, input_channels=1, output_dim=512):
