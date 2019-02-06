@@ -27,7 +27,7 @@ class NatureCnnTwoTower(LinearBackboneModel):
             in_channels=input_channels,
             out_channels=32,
             kernel_size=(8, 8),
-            stride=4
+            stride=2
         )
 
         self.conv2 = nn.Conv2d(
@@ -49,13 +49,13 @@ class NatureCnnTwoTower(LinearBackboneModel):
 
 
         self.final_width = net_util.convolutional_layer_series(input_width, [
-            (8, 0, 4),
+            (8, 0, 2),
             (4, 0, 2),
             (3, 0, 1)
         ])
 
         self.final_height = net_util.convolutional_layer_series(input_height, [
-            (8, 0, 4),
+            (8, 0, 2),
             (4, 0, 2),
             (3, 0, 1)
         ])
