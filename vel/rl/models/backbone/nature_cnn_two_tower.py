@@ -60,10 +60,11 @@ class NatureCnnTwoTower(LinearBackboneModel):
             (3, 0, 1)
         ])
 
-        self.linear_layer = nn.Linear(
+        self.linear_layer1 = nn.Linear(
             self.final_width * self.final_height * 64 + 512,  # 64 is the number of channels of the last conv layer
-            self.output_dim
+            1024
         )
+        self.linear_layer2 = nn.Linear(1024, self.output_dim)
 
     @property
     def output_dim(self) -> int:
@@ -98,7 +99,9 @@ class NatureCnnTwoTower(LinearBackboneModel):
         flattened2 = result2.view(result2.size(0), -1)
         flattened = torch.cat((flattened1, flattened2), 1)
 
-        return F.leaky_relu(self.linear_layer(flattened))
+        result = F.leaky_relu(self.linear_layer1(flattened))
+        result = F.leaky_relu(self.linear_layer2(result))
+        return result
 
 
 def create(input_width, input_height, input_channels=1, output_dim=512):
