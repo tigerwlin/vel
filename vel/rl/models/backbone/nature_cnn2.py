@@ -27,7 +27,7 @@ class NatureCnn2(LinearBackboneModel):
             in_channels=input_channels,
             out_channels=32,
             kernel_size=(8, 8),
-            stride=4
+            stride=2
         )
 
         self.conv2 = nn.Conv2d(
@@ -44,26 +44,26 @@ class NatureCnn2(LinearBackboneModel):
             stride=1
         )
 
-        self.linear1 = nn.Linear(4, 512)
-        self.linear2 = nn.Linear(512, 512)
-
+        self.linear1 = nn.Linear(4, 1024)
+        self.linear2 = nn.Linear(1024, 512)
 
         self.final_width = net_util.convolutional_layer_series(input_width, [
-            (8, 0, 4),
+            (8, 0, 2),
             (4, 0, 2),
             (3, 0, 1)
         ])
 
         self.final_height = net_util.convolutional_layer_series(input_height, [
-            (8, 0, 4),
+            (8, 0, 2),
             (4, 0, 2),
             (3, 0, 1)
         ])
 
-        self.linear_layer = nn.Linear(
+        self.linear_layer1 = nn.Linear(
             self.final_width * self.final_height * 64 + 512,  # 64 is the number of channels of the last conv layer
-            self.output_dim
+            1024
         )
+        self.linear_layer2 = nn.Linear(1024, self.output_dim)
 
     @property
     def output_dim(self) -> int:
@@ -94,14 +94,17 @@ class NatureCnn2(LinearBackboneModel):
 
         result2 = input2.view(input2.size(0), -1)
         result2 = torch.cat((result2, input3), 1)
-        result2 = F.relu(self.linear1(result2))
-        result2 = F.relu(self.linear2(result2))
+        result2 = F.leaky_relu(self.linear1(result2))
+        result2 = F.leaky_relu(self.linear2(result2))
 
         flattened1 = result1.view(result1.size(0), -1)
         flattened2 = result2.view(result2.size(0), -1)
         flattened = torch.cat((flattened1, flattened2), 1)
 
-        return F.relu(self.linear_layer(flattened))
+        result = F.leaky_relu(self.linear_layer1(flattened))
+        result = F.leaky_relu(self.linear_layer2(result))
+
+        return result
 
 
 def create(input_width, input_height, input_channels=1, output_dim=512):
