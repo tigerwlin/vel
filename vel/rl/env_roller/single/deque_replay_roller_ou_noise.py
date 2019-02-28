@@ -108,7 +108,7 @@ class DequeReplayRollerOuNoise(ReplayEnvRollerBase):
 
         return Transitions(
             size=1,
-            environment_information=[info],
+            environment_information=info,
             transition_tensors={
                 'actions': step['actions'],
                 'values': step['values']
