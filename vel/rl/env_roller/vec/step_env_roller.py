@@ -3,6 +3,7 @@ import numpy as np
 
 from vel.rl.api.base import EnvRollerBase, EnvRollerFactory
 from vel.rl.api import Trajectories
+from bc_gym_planning_env.envs.base.action import Action
 
 
 class StepEnvRoller(EnvRollerBase):
@@ -88,7 +89,8 @@ class StepEnvRoller(EnvRollerBase):
             actions_numpy = actions.detach().cpu().numpy()
             if len(actions_numpy.shape) > 1:
                 actions_numpy = actions_numpy[0]
-            new_obs, new_rewards, new_dones, new_infos = self.environment.step(actions_numpy)
+            action_class = Action(command=actions_numpy)
+            new_obs, new_rewards, new_dones, new_infos = self.environment.step(action_class)
 
             # Done is flagged true when the episode has ended AND the frame we see is already a first frame from the
             # next episode
