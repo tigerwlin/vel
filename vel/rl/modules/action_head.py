@@ -5,7 +5,8 @@ import torch.nn as nn
 import torch.nn.init as init
 import torch.nn.functional as F
 
-import gym.spaces as spaces
+# import gym.spaces as spaces
+from bc_gym_planning_env.envs.base import spaces
 
 
 class DiagGaussianActionHead(nn.Module):

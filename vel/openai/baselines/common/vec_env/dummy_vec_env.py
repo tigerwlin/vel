@@ -1,5 +1,6 @@
 import numpy as np
-from gym import spaces
+# from gym import spaces
+from bc_gym_planning_env.envs.base import spaces
 from collections import OrderedDict
 from . import VecEnv
 
