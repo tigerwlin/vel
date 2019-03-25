@@ -90,6 +90,7 @@ class StepEnvRoller(EnvRollerBase):
             if len(actions_numpy.shape) > 1:
                 actions_numpy = actions_numpy[0]
             action_class = Action(command=actions_numpy)
+            action_class.processed_command()
             new_obs, new_rewards, new_dones, new_infos = self.environment.step(action_class)
 
             # Done is flagged true when the episode has ended AND the frame we see is already a first frame from the
