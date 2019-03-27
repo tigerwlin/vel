@@ -44,7 +44,7 @@ class NatureCnnTwoTower(LinearBackboneModel):
             stride=1
         )
 
-        self.linear1 = nn.Linear(2, 1024)
+        self.linear1 = nn.Linear(5, 1024)
         self.linear2 = nn.Linear(1024, 512)
 
 
