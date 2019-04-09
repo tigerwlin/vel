@@ -58,6 +58,9 @@ class DiagGaussianActionHead(nn.Module):
         init.orthogonal_(self.linear_layer.weight, gain=0.01)
         init.constant_(self.linear_layer.bias, 0.0)
 
+        # init.orthogonal_(self.log_std.weight, gain=0.01)
+        # init.constant_(self.log_std.bias, 0.0)
+
     def entropy(self, params):
         """
         Categorical distribution entropy calculation - sum probs * log(probs).
@@ -164,7 +167,9 @@ class ActionHead(nn.Module):
     def sample(self, policy_params, **kwargs):
         """ Sample from a probability space of all actions """
         action = self.head.sample(policy_params, **kwargs)*1.0
-        action = torch.clamp(action, min=float(self.action_space.low[0]), max=float(self.action_space.high[0]))
+        # action = torch.clamp(action, min=float(self.action_space.low[0]), max=float(self.action_space.high[0]))
+        action[0, 0] = torch.clamp(action[0, 0], min=float(self.action_space.low[0]), max=float(self.action_space.high[0]))
+        action[0, 1] = torch.clamp(action[0, 1], min=float(self.action_space.low[1]), max=float(self.action_space.high[1]))
         return action
         #if isinstance(self.head, DiagGaussianActionHead):
         #    scale = torch.from_numpy(np.expand_dims(self.action_space.high - self.action_space.low, axis=0) / 2.0).to(self.device)
