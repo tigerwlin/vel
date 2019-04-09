@@ -41,7 +41,7 @@ class DiagGaussianActionHead(nn.Module):
         if argmax_sampling:
             return means
         else:
-            return torch.randn_like(means) * torch.exp(log_std) * 0.1 + means
+            return torch.randn_like(means) * torch.exp(log_std) * 1.0 + means
 
     def logprob(self, action_sample, pd_params):
         """ Log-likelihood """
@@ -163,14 +163,16 @@ class ActionHead(nn.Module):
 
     def sample(self, policy_params, **kwargs):
         """ Sample from a probability space of all actions """
-        action = self.head.sample(policy_params, **kwargs)
-        if isinstance(self.head, DiagGaussianActionHead):
-            scale = torch.from_numpy(np.expand_dims(self.action_space.high - self.action_space.low, axis=0) / 2.0).to(self.device)
-            mean_action = torch.from_numpy(np.expand_dims(self.action_space.low + self.action_space.high, axis=0) / 2.0).to(self.device)
-            normalized_action = action.tanh() * scale + mean_action
-            return normalized_action
-        else:
-            return action
+        action = self.head.sample(policy_params, **kwargs)*1.0
+        action = torch.clamp(action, min=float(self.action_space.low[0]), max=float(self.action_space.high[0]))
+        return action
+        #if isinstance(self.head, DiagGaussianActionHead):
+        #    scale = torch.from_numpy(np.expand_dims(self.action_space.high - self.action_space.low, axis=0) / 2.0).to(self.device)
+        #    mean_action = torch.from_numpy(np.expand_dims(self.action_space.low + self.action_space.high, axis=0) / 2.0).to(self.device)
+        #    normalized_action = action.tanh() * scale + mean_action
+        #    return normalized_action
+        #else:
+        #    return action
 
     def reset_weights(self):
         """ Initialize weights to sane defaults """

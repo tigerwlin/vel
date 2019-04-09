@@ -61,7 +61,7 @@ class NatureCnnTwoTower(LinearBackboneModel):
         ])
 
         self.linear_layer1 = nn.Linear(
-            self.final_width * self.final_height * 64 + 512,  # 64 is the number of channels of the last conv layer
+            self.final_width * self.final_height * 64*1 + 512,  # 64 is the number of channels of the last conv layer
             1024
         )
         self.linear_layer2 = nn.Linear(1024, self.output_dim)
