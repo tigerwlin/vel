@@ -25,6 +25,7 @@ class AddCoords(nn.Module):
         #     input_tensor = tf.tile(input_tensor, [1, self.x_dim, self.y_dim, 1])  # (batch, 64, 64, 2)
         #     input_tensor = tf.cast(input_tensor, 'float32')
 
+        device = input_tensor.device
         batch_size_tensor = input_tensor.shape[0]  # get batch size
 
         xx_ones = torch.ones([batch_size_tensor, self.x_dim], dtype=torch.int32)  # e.g. (batch, x)
@@ -50,8 +51,8 @@ class AddCoords(nn.Module):
         yy_channel = yy_channel * 2 - 1
 
         ret = torch.cat([input_tensor,
-                         xx_channel,
-                         yy_channel], dim=1)  # e.g. (batch, c+2, x, y)
+                         xx_channel.to(device),
+                         yy_channel.to(device)], dim=1)  # e.g. (batch, c+2, x, y)
 
         if self.with_r:
             rr = torch.sqrt(torch.pow(xx_channel, 2) + torch.pow(yy_channel, 2))
