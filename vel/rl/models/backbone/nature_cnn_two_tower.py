@@ -12,6 +12,7 @@ import torch.nn.init as init
 import torch.nn.functional as F
 
 import vel.util.network as net_util
+from vel.rl.models.backbone.CoordConv import CoordConv
 
 from vel.api.base import LinearBackboneModel, ModelFactory
 
@@ -23,8 +24,14 @@ class NatureCnnTwoTower(LinearBackboneModel):
 
         self._output_dim = output_dim
 
-        self.conv1 = nn.Conv2d(
-            in_channels=input_channels,
+        # self.conv1 = nn.Conv2d(
+        #     in_channels=input_channels,
+        #     out_channels=32,
+        #     kernel_size=(8, 8),
+        #     stride=2
+        # )
+        self.conv1 = CoordConv(x_dim=133, y_dim=117, with_r=False,
+            in_channels=input_channels+2,
             out_channels=32,
             kernel_size=(8, 8),
             stride=2
