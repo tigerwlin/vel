@@ -8,23 +8,16 @@ import torch.nn as nn
 
 class AddCoords(nn.Module):
     """Add coords to a tensor"""
-    def __init__(self, x_dim=64, y_dim=64, with_r=False, skiptile=False):
+    def __init__(self, x_dim=64, y_dim=64, with_r=False):
         super(AddCoords, self).__init__()
         self.x_dim = x_dim
         self.y_dim = y_dim
         self.with_r = with_r
-        self.skiptile = skiptile
 
     def forward(self, input_tensor):
         """
-                input_tensor: (batch, c, x_dim, y_dim)
-                In the first case, first tile the input_tensor to be (batch, c, x_dim, y_dim)
-                In the second case, skiptile, just concat
-                """
-        # if not self.skiptile:
-        #     input_tensor = tf.tile(input_tensor, [1, self.x_dim, self.y_dim, 1])  # (batch, 64, 64, 2)
-        #     input_tensor = tf.cast(input_tensor, 'float32')
-
+        input_tensor: (batch, c, x_dim, y_dim)
+        """
         device = input_tensor.device
         batch_size_tensor = input_tensor.shape[0]  # get batch size
 
@@ -45,8 +38,8 @@ class AddCoords(nn.Module):
         yy_channel = torch.matmul(yy_range, yy_ones)  # e.g. (batch, x, y)
         yy_channel = yy_channel.unsqueeze(1)  # e.g. (batch, 1, x, y)
 
-        xx_channel = xx_channel.float() / (self.x_dim - 1)
-        yy_channel = yy_channel.float() / (self.y_dim - 1)
+        xx_channel = xx_channel.float() / (self.y_dim - 1)
+        yy_channel = yy_channel.float() / (self.x_dim - 1)
         xx_channel = xx_channel * 2 - 1  # [-1,1]
         yy_channel = yy_channel * 2 - 1
 
@@ -67,8 +60,7 @@ class CoordConv(nn.Module):
         super(CoordConv, self).__init__()
         self.addcoords = AddCoords(x_dim=x_dim,
                                    y_dim=y_dim,
-                                   with_r=with_r,
-                                   skiptile=True)
+                                   with_r=with_r)
         self.conv = nn.Conv2d(*args, **kwargs)
 
     def forward(self, input_tensor):
