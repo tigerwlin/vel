@@ -21,18 +21,18 @@ class AddCoords(nn.Module):
         device = input_tensor.device
         batch_size_tensor = input_tensor.shape[0]  # get batch size
 
-        xx_ones = torch.ones([batch_size_tensor, self.x_dim], dtype=torch.int32)  # e.g. (batch, x)
+        xx_ones = torch.ones([batch_size_tensor, self.x_dim], dtype=torch.int32, device=device)  # e.g. (batch, x)
         xx_ones = xx_ones.unsqueeze(-1)  # e.g. (batch, x, 1)
 
-        xx_range = torch.arange(self.y_dim, dtype=torch.int32).unsqueeze(0).repeat(batch_size_tensor, 1)  # e.g. (batch, y)
+        xx_range = torch.arange(self.y_dim, dtype=torch.int32, device=device).unsqueeze(0).repeat(batch_size_tensor, 1)  # e.g. (batch, y)
         xx_range = xx_range.unsqueeze(1)  # e.g. (batch, 1, y)
 
         xx_channel = torch.matmul(xx_ones, xx_range)  # e.g. (batch, x, y)
         xx_channel = xx_channel.unsqueeze(1)  # e.g. (batch, x, y, 1)
 
-        yy_ones = torch.ones([batch_size_tensor, self.y_dim], dtype=torch.int32)  # e.g. (batch, y)
+        yy_ones = torch.ones([batch_size_tensor, self.y_dim], dtype=torch.int32, device=device)  # e.g. (batch, y)
         yy_ones = yy_ones.unsqueeze(1)  # e.g. (batch, 1, y)
-        yy_range = torch.arange(self.x_dim, dtype=torch.int32).unsqueeze(0).repeat(batch_size_tensor, 1)  # (batch, x)
+        yy_range = torch.arange(self.x_dim, dtype=torch.int32, device=device).unsqueeze(0).repeat(batch_size_tensor, 1)  # (batch, x)
         yy_range = yy_range.unsqueeze(-1)  # e.g. (batch, x, 1)
 
         yy_channel = torch.matmul(yy_range, yy_ones)  # e.g. (batch, x, y)
@@ -44,8 +44,8 @@ class AddCoords(nn.Module):
         yy_channel = yy_channel * 2 - 1
 
         ret = torch.cat([input_tensor,
-                         xx_channel.to(device),
-                         yy_channel.to(device)], dim=1)  # e.g. (batch, c+2, x, y)
+                         xx_channel,
+                         yy_channel], dim=1)  # e.g. (batch, c+2, x, y)
 
         if self.with_r:
             rr = torch.sqrt(torch.pow(xx_channel, 2) + torch.pow(yy_channel, 2))
