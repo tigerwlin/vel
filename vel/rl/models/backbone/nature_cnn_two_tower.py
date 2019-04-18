@@ -30,7 +30,7 @@ class NatureCnnTwoTower(LinearBackboneModel):
         #     kernel_size=(8, 8),
         #     stride=2
         # )
-        self.conv1 = CoordConv(x_dim=133, y_dim=117, with_r=False,
+        self.conv1 = CoordConv(x_dim=133, y_dim=133, with_r=False,
             in_channels=input_channels+2,
             out_channels=32,
             kernel_size=(8, 8),
