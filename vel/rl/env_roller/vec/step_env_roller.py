@@ -3,6 +3,7 @@ import numpy as np
 
 from vel.rl.api.base import EnvRollerBase, EnvRollerFactory
 from vel.rl.api import Trajectories
+from bc_gym_planning_env.envs.base.action import Action
 
 
 class StepEnvRoller(EnvRollerBase):
@@ -19,7 +20,7 @@ class StepEnvRoller(EnvRollerBase):
         self.gae_lambda = gae_lambda
 
         # Initial observation
-        self.last_observation = self._to_tensor(self.environment.reset())
+        self.last_observation = self._bc_observations_to_tensor(self.environment.reset())
 
         # Relevant for RNN policies
         self.hidden_state = None
@@ -32,6 +33,18 @@ class StepEnvRoller(EnvRollerBase):
     def _to_tensor(self, numpy_array):
         """ Convert numpy array to a tensor """
         return torch.from_numpy(numpy_array).to(self.device)
+
+    def _bc_observations_to_tensor(self, observations):
+        """ Convert numpy array to a tensor """
+        if isinstance(observations, dict):
+            input1 = observations['environment']
+            input2 = observations['goal']
+            input_additional_channel = np.zeros(input1.shape[:-1]+(1,))
+            input_additional_channel[:, 0, 0:5, :] = input2
+            input = np.concatenate((input1.astype(float), input_additional_channel), axis=3)
+            return torch.from_numpy(input).to(self.device)
+        else:
+            raise NotImplementedError
 
     @torch.no_grad()
     def rollout(self, batch_info, model):
@@ -69,7 +82,11 @@ class StepEnvRoller(EnvRollerBase):
             logprobs_accumulator.append(logprobs)
 
             actions_numpy = actions.detach().cpu().numpy()
-            new_obs, new_rewards, new_dones, new_infos = self.environment.step(actions_numpy)
+            action_classes = []
+            for i in range(actions_numpy.shape[0]):
+                action_class = Action(command=actions_numpy[i, :])
+                action_classes.append(action_class)
+            new_obs, new_rewards, new_dones, new_infos = self.environment.step(action_classes)
 
             # Done is flagged true when the episode has ended AND the frame we see is already a first frame from the
             # next episode
@@ -77,7 +94,7 @@ class StepEnvRoller(EnvRollerBase):
             dones_tensor = self._to_tensor(new_dones.astype(np.float32))
             dones_accumulator.append(dones_tensor)
 
-            self.last_observation = self._to_tensor(new_obs[:])
+            self.last_observation = self._bc_observations_to_tensor(new_obs)
 
             if model.is_recurrent:
                 # Zero out state in environments that have finished
