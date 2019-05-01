@@ -65,4 +65,7 @@ class DummyVecEnv(VecEnv):
         if self.keys==[None]:
             return self.buf_obs[None]
         else:
-            return self.buf_obs
+            obs_copy = {}
+            for k in self.keys:
+                obs_copy[k] = np.copy(self.buf_obs[k])
+            return obs_copy
