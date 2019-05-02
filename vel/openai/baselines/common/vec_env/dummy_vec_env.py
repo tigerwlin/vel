@@ -1,5 +1,5 @@
 import numpy as np
-from gym import spaces
+from bc_gym_planning_env.envs.base import spaces
 from . import VecEnv
 from .util import copy_obs_dict, dict_to_obs, obs_space_info
 
@@ -26,7 +26,7 @@ class DummyVecEnv(VecEnv):
         self.buf_rews  = np.zeros((self.num_envs,), dtype=np.float32)
         self.buf_infos = [{} for _ in range(self.num_envs)]
         self.actions = None
-        self.specs = [e.spec for e in self.envs]
+        # self.specs = [e.spec for e in self.envs]
 
     def step_async(self, actions):
         listify = True

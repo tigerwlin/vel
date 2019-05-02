@@ -4,6 +4,7 @@ import numpy as np
 from vel.api import BatchInfo, Model
 from vel.rl.api import Trajectories, Rollout, EnvRollerBase, EnvRollerFactoryBase
 from vel.util.tensor_accumulator import TensorAccumulator
+from bc_gym_planning_env.envs.base.action import Action
 
 
 class StepEnvRoller(EnvRollerBase):
@@ -16,10 +17,23 @@ class StepEnvRoller(EnvRollerBase):
         self.device = device
 
         # Initial observation - kept on CPU
-        self.last_observation = torch.from_numpy(self.environment.reset()).clone()
+        # self.last_observation = torch.from_numpy(self.environment.reset()).clone()
+        self.last_observation = self._bc_observations_to_tensor(self.environment.reset()).clone()
 
         # Relevant for RNN policies - kept on DEVICE
         self.hidden_state = None
+
+    def _bc_observations_to_tensor(self, observations):
+        """ Convert numpy array to a tensor """
+        if isinstance(observations, dict):
+            input1 = observations['environment']
+            input2 = observations['goal']
+            input_additional_channel = np.zeros(input1.shape[:-1] + (1,))
+            input_additional_channel[:, 0, 0:5, :] = input2
+            input = np.concatenate((input1.astype(float), input_additional_channel), axis=3)
+            return torch.from_numpy(input).to(self.device)
+        else:
+            raise NotImplementedError
 
     @property
     def environment(self):
@@ -52,14 +66,20 @@ class StepEnvRoller(EnvRollerBase):
             accumulator.add('observations', self.last_observation)
 
             actions_numpy = step['actions'].detach().cpu().numpy()
-            new_obs, new_rewards, new_dones, new_infos = self.environment.step(actions_numpy)
+            # new_obs, new_rewards, new_dones, new_infos = self.environment.step(actions_numpy)
+            action_classes = []
+            for i in range(actions_numpy.shape[0]):
+                action_class = Action(command=actions_numpy[i, :])
+                action_classes.append(action_class)
+            new_obs, new_rewards, new_dones, new_infos = self.environment.step(action_classes)
 
             # Done is flagged true when the episode has ended AND the frame we see is already a first frame from the
             # next episode
             dones_tensor = torch.from_numpy(new_dones.astype(np.float32)).clone()
             accumulator.add('dones', dones_tensor)
 
-            self.last_observation = torch.from_numpy(new_obs).clone()
+            # self.last_observation = torch.from_numpy(new_obs).clone()
+            self.last_observation = self._bc_observations_to_tensor(new_obs).clone()
 
             if model.is_recurrent:
                 # Zero out state in environments that have finished

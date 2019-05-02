@@ -4,7 +4,7 @@ Helpers for dealing with vectorized environments.
 
 from collections import OrderedDict
 
-import gym
+from bc_gym_planning_env.envs.base import spaces
 import numpy as np
 
 
@@ -35,7 +35,7 @@ def obs_space_info(obs_space):
         shapes: a dict mapping keys to shapes.
         dtypes: a dict mapping keys to dtypes.
     """
-    if isinstance(obs_space, gym.spaces.Dict):
+    if isinstance(obs_space, spaces.Dict):
         assert isinstance(obs_space.spaces, OrderedDict)
         subspaces = obs_space.spaces
     else:
