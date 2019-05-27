@@ -22,6 +22,17 @@ class StepEnvRoller(EnvRollerBase):
 
         # Relevant for RNN policies - kept on DEVICE
         self.hidden_state = None
+        self._command_dict = {0: [0.2, 0.0],
+                              1: [0.2, 0.3],
+                              2: [0.2, -0.3],
+                              3: [0.2, 0.5],
+                              4: [0.2, -0.5],
+                              5: [0.2, 0.7],
+                              6: [0.2, -0.7],
+                              7: [0.2, 1.1],
+                              8: [0.2, -1.1],
+                              9: [0.2, 1.3],
+                              10: [0.2, -1.3]}
 
     def _bc_observations_to_tensor(self, observations):
         """ Convert numpy array to a tensor """
@@ -69,7 +80,8 @@ class StepEnvRoller(EnvRollerBase):
             # new_obs, new_rewards, new_dones, new_infos = self.environment.step(actions_numpy)
             action_classes = []
             for i in range(actions_numpy.shape[0]):
-                action_class = Action(command=actions_numpy[i, :])
+                action_class = Action(command=self._command_dict[actions_numpy[i]])
+                # action_class = Action(command=actions_numpy[i, :])
                 action_classes.append(action_class)
             new_obs, new_rewards, new_dones, new_infos = self.environment.step(action_classes)
 
